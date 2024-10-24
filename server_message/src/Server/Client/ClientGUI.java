@@ -1,4 +1,6 @@
-package Server;
+package Server.Client;
+
+import Server.Server.ServerWindow;
 
 import javax.swing.*;
 import java.awt.*;
@@ -7,17 +9,15 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
-public class ClientGUI extends JFrame {
+public class ClientGUI extends JFrame implements ClientView{
 
-    private ServerWindow server;
 
     private static final int WIDTH = 400;
     private static final int HEIGHT = 300;
 
-    private boolean connect;
-    private String nameClient;
-
     private final JTextArea log = new JTextArea();
+
+    private ClientController clientController;
 
     private final JPanel panelTop = new JPanel(new GridLayout(2,3));
     private final JTextField tfIPAddress = new JTextField("127.0.0.1");
@@ -31,9 +31,8 @@ public class ClientGUI extends JFrame {
     private final JButton btnSend = new JButton("Send");
     private final JButton btnDisconnect = new JButton("Disconnect");
 
-    ClientGUI(ServerWindow server) {
+    public ClientGUI() {
 
-        this.server = server;
         setResizable(false);
         setLocationRelativeTo(null);
         setSize(WIDTH, HEIGHT);
@@ -70,6 +69,7 @@ public class ClientGUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 disconnectServer();
+                disconnectClient();
             }
         });
 
@@ -98,49 +98,34 @@ public class ClientGUI extends JFrame {
     }
 
     public void connectToServer() {
-        if(server.connectClient(this)){
-            logger("Подключение выполнено");
-            connect = true;
-            nameClient = tfLogin.getText();
-            String logClient = server.getLog();
-            if (logClient != null) {
-                logger(logClient);
-            }
+        if(clientController.connectToServer(tfLogin.getText())){
             panelTop.setVisible(false);
-        } else {
-            logger("Подключение не выполнено");
         }
 
     }
 
-    public void disconnectServer() {
-        if (connect) {
-            panelTop.setVisible(true);
-            connect = false;
-            server.disconnectClient(this);
-            logger("Отключен от сервера");
-        }
-
+    @Override
+    public void showMessage(String message) {
+        log.append(message);
     }
 
-    private void logger(String text){
-        log.append(text + "\n");
+    @Override
+    public void setClientController(ClientController clientController) {
+        this.clientController = clientController;
     }
 
-    public void answer (String text){
-        logger(text);
+    @Override
+    public void disconnectServer(){
+        panelTop.setVisible(true);
+    }
+
+    public void disconnectClient(){
+        clientController.disconnectClient();
     }
 
     public void message(){
-        if(connect){
-            String messageClient = tfMessage.getText();
-            if(!messageClient.isEmpty()){
-                server.message(nameClient + ": " + messageClient);
-                tfMessage.setText("");
-            } else {
-                logger("Отсутствует подключение к серверу");
-            }
-        }
+        clientController.message(tfMessage.getText());
+        tfMessage.setText("");
     }
 
 
